@@ -1,13 +1,13 @@
 #include <CoolStick.h>
 #include <SoftwareSerial.h>
-#define RxD 0
-#define TxD	1
+#define RxD 8
+#define TxD	9
 
 SoftwareSerial	BTModule(RxD,TxD);
 CoolStick	MyStick;
 int	MoistPin = A5;
 int LumPin = A4;
-int TempPin = 7;
+int TempPin = 2;
 
 void setup()
 {
