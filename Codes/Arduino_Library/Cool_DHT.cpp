@@ -2,7 +2,7 @@
 	TYPE : SENSOR	-	MODEL : Grove DHT Series (11 - 22)
 	ROLE : 	Le Petit Cool Temperature and Humidity Sensor
 			Le Cool Stick Temperature and Humidity Sensor
-	@author Maximilien Daman	01/12/2015
+	@author Maximilien Daman	09/12/2015
 	Mail : max@lacool.co	Web : www.lacool.co
  */
 
