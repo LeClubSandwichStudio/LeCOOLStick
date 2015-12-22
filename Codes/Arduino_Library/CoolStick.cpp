@@ -16,6 +16,7 @@
 	#include <CoolTemp.h>
 	#include <CoolMoist.h>
 	
+static bool	IsBTSync = false;
 static String myRead(SoftwareSerial& BlueTooth)
 {
 	String Res;
@@ -50,7 +51,7 @@ void CoolStick::begin(uint8_t RxD, uint8_t TxD, uint8_t MoisturePin, uint8_t Lum
 	DHTTimer[0] = 0;
 	DHTTimer[1] = millis();
 	//Communication:
-	setupBTconnection(RxD, TxD);
+	if(!IsBTSync) setupBTconnection(RxD, TxD);
 	myPrintln(F("\n---Initialisation Capteurs---"), *BTModule);
 //Hydrometrie:
 	Capteur_M.begin(MoisturePin);
@@ -89,7 +90,7 @@ void CoolStick::beginLum(uint8_t RxD, uint8_t TxD, uint8_t LumPin)
 	ReceivedBuffer = "";
 	SendingBuffer = "";
 	//Communication:
-	setupBTconnection(RxD, TxD);
+	if(!IsBTSync) setupBTconnection(RxD, TxD);
 	myPrintln(F("\n---Initialisation Capteurs---"), *BTModule);
 //Luminosité:	
 	Capteur_L.begin(LumPin);
@@ -106,7 +107,7 @@ void CoolStick::beginMoist(uint8_t RxD, uint8_t TxD, uint8_t MoisturePin)
 	ReceivedBuffer = "";
 	SendingBuffer = "";
 	//Communication:
-	setupBTconnection(RxD, TxD);
+	if(!IsBTSync) setupBTconnection(RxD, TxD);
 	myPrintln(F("\n---Initialisation Capteurs---"), *BTModule);
 //Hydrometrie:
 	Capteur_M.begin(MoisturePin);
@@ -125,7 +126,7 @@ void CoolStick::beginTemp(uint8_t RxD, uint8_t TxD, uint8_t TempPin)
 	DHTTimer[0] = 0;
 	DHTTimer[1] = millis();
 	//Communication:
-	setupBTconnection(RxD, TxD);
+	if(!IsBTSync) setupBTconnection(RxD, TxD);
 	myPrintln(F("\n---Initialisation Capteurs---"), *BTModule);
 //Température:	
 	if(TempPin > 14)	//Thermistance (Analogique)
@@ -156,81 +157,90 @@ void CoolStick::beginTemp(uint8_t RxD, uint8_t TxD, uint8_t TempPin)
 
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////COMMUNICATION/////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////	
+///////////////////////////////////////////////////////////////////////////////
 void CoolStick::setupBTconnection(uint8_t RxD, uint8_t TxD)
 {
-	Serial.print(F("Initialisation CoolStick\n"));
-	pinMode(RxD, INPUT);
-	pinMode(TxD, OUTPUT);
-	(*BTModule).begin(BTBaudRate);	
-/* ST MODE:	*/
-#ifdef _STMode
-//Parametres generaux:
-	String StringBuffer1_0, StringBuffer1_1;
-	StringBuffer1_0.reserve(64);
-	StringBuffer1_1.reserve(20);
-	StringBuffer1_1 = "\r\n+INQ=1\r\n";
-	StringBuffer1_0 = "\r\n+STWMOD=0\r\n";
-	(*BTModule).print(StringBuffer1_0);
-	delay(1000);
-	StringBuffer1_0 = "\r\nSTBD=";
-	StringBuffer1_0.concat(BTBaudRate);
-	StringBuffer1_0.concat("\r\n");
-	(*BTModule).print(StringBuffer1_0);
-	delay(1000);
-	StringBuffer1_0 = "\r\n+STNA=";
-	StringBuffer1_0.concat(BTName);
-	StringBuffer1_0.concat("\r\n");
-	(*BTModule).print(StringBuffer1_0);
-	delay(1000);
-	StringBuffer1_0 = "\r\n+STPIN=";
-	StringBuffer1_0.concat(BTPinCode);
-	StringBuffer1_0.concat("\r\n");
-	(*BTModule).print(StringBuffer1_0);
-	delay(1000);
-	StringBuffer1_0 = "\r\n+STOAUT=1\r\n";
-	(*BTModule).print(StringBuffer1_0);
-	delay(1000);
-	StringBuffer1_0 = "\r\n+STAUTO=1\r\n";
-	(*BTModule).print(StringBuffer1_0);
-//Mise en Fonctionnement:
-	delay(2000);
-	(*BTModule).println(StringBuffer1_1);
-	delay(2000);
-	(*BTModule).println(F("\tConnexion BlueTooth engagee."));
-	(*BTModule).flush();
-	delay(1000);
-#endif	
-/* AT MODE: */
-#ifdef _ATMode
-	String StringBuffer1_0;
-	StringBuffer1_0.reserve(64);
-	StringBuffer1_0 = "AT";
-	(*BTModule).print(StringBuffer1_0);
-	delay(2000);
-	//Set Baudrate:
-	StringBuffer1_0.concat("+BAUD");
-	StringBuffer1_0.concat(ATBaudRate);
-	(*BTModule).print(StringBuffer1_0);
-	StringBuffer1_0 = "";
-	delay(2000);
-	//Set Name:
-	StringBuffer1_0 = "AT+NAME";
-	StringBuffer1_0.concat(BTName);
-	(*BTModule).print(StringBuffer1_0);
-	StringBuffer1_0 = "";
-	delay(2000);
-	//Set Pin:
-	StringBuffer1_0 = "AT+PIN";
-	StringBuffer1_0.concat(BTPinCode);
-	(*BTModule).print(StringBuffer1_0);
-	delay(2000);
-	//Sortie de mode AT:
-	(*BTModule).print("AT+RESET");
-	delay(2000);
-	(*BTModule).println(F("\tConnexion BlueTooth engagee."));
-	(*BTModule).flush();
-#endif
+	IsBTSync = true;
+	if(RxD == TxD)
+	{
+		Serial.print(F("Initialisation CoolStick sans Bluetooth\n"));
+		return;
+	}	
+	else
+	{
+		Serial.print(F("Initialisation CoolStick\n"));
+		pinMode(RxD, INPUT);
+		pinMode(TxD, OUTPUT);
+		(*BTModule).begin(BTBaudRate);	
+	/* ST MODE:	*/
+	#ifdef _STMode
+		//Parametres generaux:
+		String StringBuffer1_0, StringBuffer1_1;
+		StringBuffer1_0.reserve(64);
+		StringBuffer1_1.reserve(20);
+		StringBuffer1_1 = "\r\n+INQ=1\r\n";
+		StringBuffer1_0 = "\r\n+STWMOD=0\r\n";
+		(*BTModule).print(StringBuffer1_0);
+		delay(1000);
+		StringBuffer1_0 = "\r\nSTBD=";
+		StringBuffer1_0.concat(BTBaudRate);
+		StringBuffer1_0.concat("\r\n");
+		(*BTModule).print(StringBuffer1_0);
+		delay(1000);
+		StringBuffer1_0 = "\r\n+STNA=";
+		StringBuffer1_0.concat(BTName);
+		StringBuffer1_0.concat("\r\n");
+		(*BTModule).print(StringBuffer1_0);
+		delay(1000);
+		StringBuffer1_0 = "\r\n+STPIN=";
+		StringBuffer1_0.concat(BTPinCode);
+		StringBuffer1_0.concat("\r\n");
+		(*BTModule).print(StringBuffer1_0);
+		delay(1000);
+		StringBuffer1_0 = "\r\n+STOAUT=1\r\n";
+		(*BTModule).print(StringBuffer1_0);
+		delay(1000);
+		StringBuffer1_0 = "\r\n+STAUTO=1\r\n";
+		(*BTModule).print(StringBuffer1_0);
+	//Mise en Fonctionnement:
+		delay(2000);
+		(*BTModule).println(StringBuffer1_1);
+		delay(2000);
+		(*BTModule).println(F("\tConnexion BlueTooth engagee."));
+		(*BTModule).flush();
+		delay(1000);
+	#endif	
+	/* AT MODE: */
+	#ifdef _ATMode
+		String StringBuffer1_0;
+		StringBuffer1_0.reserve(64);
+		StringBuffer1_0 = "AT";
+		(*BTModule).print(StringBuffer1_0);
+		delay(2000);
+		//Set Baudrate:
+		StringBuffer1_0.concat("+BAUD");
+		StringBuffer1_0.concat(ATBaudRate);
+		(*BTModule).print(StringBuffer1_0);
+		StringBuffer1_0 = "";
+		delay(2000);
+		//Set Name:
+		StringBuffer1_0 = "AT+NAME";
+		StringBuffer1_0.concat(BTName);
+		(*BTModule).print(StringBuffer1_0);
+		StringBuffer1_0 = "";
+		delay(2000);
+		//Set Pin:
+		StringBuffer1_0 = "AT+PIN";
+		StringBuffer1_0.concat(BTPinCode);
+		(*BTModule).print(StringBuffer1_0);
+		delay(2000);
+		//Sortie de mode AT:
+		(*BTModule).print("AT+RESET");
+		delay(2000);
+		(*BTModule).println(F("\tConnexion BlueTooth engagee."));
+		(*BTModule).flush();
+	#endif
+	}
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -310,8 +320,8 @@ void CoolStick::getLuminosity()
 //Mesure:
 	Capteur_L.readData();
 //Ecriture:
-	myPrint("Luminosite : ", *BTModule);
-	myPrint(Capteur_L.getVal(), *BTModule);
+	myPrint("\n\tLuminosite : ", *BTModule);
+	myPrint(int(map(Capteur_L.getVal(), 0, 1023, 0, 100)), *BTModule);
 	myPrint(" %\n", *BTModule);
 	return;
 }

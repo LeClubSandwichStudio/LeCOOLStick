@@ -7,12 +7,14 @@
 
 #ifndef CoolStick_h
 #define CoolStick_h
-	#define 				_STMode
-		#define BTBaudRate	38400
-	/* #define					_ATMode
-		#define ATBaudRate	6 */
+	#define BTBaudRate	9600
+	#define ATBaudRate	4
+	/* #define BTBaudRate	38400
+	#define ATBaudRate	6 */
 	#define BTName		"MyStick"
 	#define BTPinCode	"1234"
+	/*#define 				_STMode */
+	#define					_ATMode
 	#define DHTMaxFreq	2500
 
 //Inclusion des librairies
